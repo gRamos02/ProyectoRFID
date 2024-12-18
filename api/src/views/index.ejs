@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Listado de Tarjetas</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+      }
+      .container {
+        margin: 20px auto;
+        max-width: 800px;
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+      table th,
+      table td {
+        text-align: left;
+        padding: 12px;
+        border: 1px solid #ddd;
+      }
+      table th {
+        background-color: #007bff;
+        color: white;
+      }
+      table tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      table tr:hover {
+        background-color: #f1f1f1;
+      }
+      .button {
+        padding: 8px 12px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .button.danger {
+        background-color: #dc3545;
+      }
+      .button:hover {
+        background-color: #218838;
+      }
+      .button.danger:hover {
+        background-color: #c82333;
+      }
+      form {
+        display: inline;
+      }
+      .form-row {
+        margin: 20px 0;
+      }
+      .form-row label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+      .form-row input,
+      .form-row select {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .form-row button {
+        display: block;
+        width: 100%;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Listado de Tarjetas</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tarjetas-list">
+          <% tarjetas.forEach((tarjeta) => { %>
+          <tr id="tarjeta-<%= tarjeta.codigoTarjeta %>">
+            <td><%= tarjeta.id %></td>
+            <td><%= tarjeta.codigoTarjeta %></td>
+            <td><%= tarjeta.nombreUsuario %></td>
+            <td id="estado-<%= tarjeta.codigoTarjeta %>">
+              <%= tarjeta.activo ? 'Activo' : 'Inactivo' %>
+            </td>
+            <td>
+              <!-- Botón para alternar estado -->
+              <button
+                class="button"
+                onclick="toggleEstado('<%= tarjeta.codigoTarjeta %>', '<%= tarjeta.activo %>')"
+              >
+                <%= tarjeta.activo ? 'Inactivar' : 'Activar' %>
+              </button>
+              <!-- Botón para eliminar tarjeta -->
+              <button
+                class="button danger"
+                onclick="deleteTarjeta('<%= tarjeta.codigoTarjeta %>')"
+              >
+                Eliminar
+              </button>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+
+      <!-- Formulario para agregar nueva tarjeta -->
+      <div class="form-row">
+        <h2>Agregar Nueva Tarjeta</h2>
+        <form id="add-tarjeta-form">
+          <label for="codigo">Código de la Tarjeta</label>
+          <input type="text" id="codigo" name="codigo" required />
+
+          <label for="nombre">Nombre del Usuario</label>
+          <input type="text" id="nombre" name="nombre" required />
+
+          <button type="submit" class="button">Agregar Tarjeta</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Función para alternar estado (activar/inactivar)
+      async function toggleEstado(codigo, estadoActual) {
+        const nuevoEstado = !estadoActual; // Cambiar el estado
+        const url = `/tarjetas/${codigo}`;
+        const data = { activo: nuevoEstado };
+
+        try {
+          const response = await fetch(url, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            // Actualizar el estado de la tarjeta en la UI
+            document.getElementById(`estado-${codigo}`).innerText = nuevoEstado
+              ? "Activo"
+              : "Inactivo";
+          } else {
+            alert(result.message || "Error al cambiar el estado");
+          }
+        } catch (error) {
+          alert("Hubo un error al cambiar el estado");
+        }
+      }
+
+      // Función para eliminar tarjeta
+      async function deleteTarjeta(codigo) {
+        const url = `/tarjetas/${codigo}`;
+
+        try {
+          const response = await fetch(url, {
+            method: "DELETE",
+          });
+
+          if (response.ok) {
+            document.getElementById(`tarjeta-${codigo}`).remove(); // Eliminar la fila de la tabla
+          } else {
+            const result = await response.json();
+            alert(result.message || "Error al eliminar la tarjeta");
+          }
+        } catch (error) {
+          alert("Hubo un error al eliminar la tarjeta");
+        }
+      }
+
+      // Función para agregar nueva tarjeta
+      document
+        .getElementById("add-tarjeta-form")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
+
+          const codigo = document.getElementById("codigo").value;
+          const nombre = document.getElementById("nombre").value;
+
+          const url = "/tarjetas";
+          const data = { codigo, nombre };
+
+          try {
+            const response = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+
+            if (response.created) {
+              // Añadir la nueva tarjeta en la UI
+              const row = document.createElement("tr");
+              row.id = `tarjeta-${codigo}`;
+              row.innerHTML = `
+            <td>${result.data.id}</td>
+            <td>${codigo}</td>
+            <td>${nombre}</td>
+            <td id="estado-${codigo}">Inactivo</td>
+            <td>
+              <button class="button" onclick="toggleEstado('${codigo}', false)">Activar</button>
+              <button class="button danger" onclick="deleteTarjeta('${codigo}')">Eliminar</button>
+            </td>
+          `;
+              document.getElementById("tarjetas-list").appendChild(row);
+
+              // Limpiar el formulario
+              document.getElementById("codigo").value = "";
+              document.getElementById("nombre").value = "";
+            } else {
+              alert(result.message || "Error al agregar tarjeta");
+            }
+          } catch (error) {
+            alert("Hubo un error al agregar la tarjeta");
+          }
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1 @@
+ALTER TABLE `historial` DROP INDEX `historial_codigo_tarjeta_unique`;
